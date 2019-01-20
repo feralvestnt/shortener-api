@@ -15,12 +15,12 @@ public class UrlController {
     private UrlService urlService;
 
     @PostMapping
-    public String save(@RequestBody Url url) {
-        return urlService.save(url);
+    public void save(@RequestBody Url url) {
+        urlService.save(url);
     }
 
-    @PutMapping String update(@RequestBody Url url) {
-        return urlService.save(url);
+    @PutMapping void update(@RequestBody Url url) {
+        urlService.save(url);
     }
 
     @GetMapping

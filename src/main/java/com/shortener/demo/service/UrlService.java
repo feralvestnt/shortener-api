@@ -1,5 +1,6 @@
 package com.shortener.demo.service;
 
+import com.shortener.demo.comum.CommunicationException;
 import com.shortener.demo.comum.ValidacaoException;
 import com.shortener.demo.model.Url;
 import com.shortener.demo.repository.UrlRepository;
@@ -18,9 +19,9 @@ public class UrlService {
     @Autowired
     private UrlRepository urlRepository;
 
-    private static String ACCESS_TOKEN_BITLY_CLIENT = "79c3d14dadeeaa35656d13cae1e9f9191d1a5f6ee";
+    private static String ACCESS_TOKEN_BITLY_CLIENT = "79c3d14dadeeaa35656d13cae1e9f9191d1a5f6e";
 
-    public String save(Url url) {
+    public void save(Url url) {
         try {
             validateUrl(url);
 
@@ -29,10 +30,10 @@ public class UrlService {
 
         } catch (ValidacaoException ex) {
             throw ex;
-        } catch (Exception sql) {
+        } catch (Exception ex) {
             System.out.println("Error saving url.");
+            throw ex;
         }
-        return url.getShortenedAddress();
     }
 
     public void validateUrl(Url url) {
@@ -41,20 +42,25 @@ public class UrlService {
         }
     }
 
-    public void shortenAddress(Url url) throws ValidacaoException {
-        BitlyClient cliente = new BitlyClient(ACCESS_TOKEN_BITLY_CLIENT);
-        Response<ShortenResponse> response = cliente.shorten()
-                                .setLongUrl(url.getAddress())
-                                .call();
+    public void shortenAddress(Url url) {
+        try {
+            BitlyClient cliente = new BitlyClient(ACCESS_TOKEN_BITLY_CLIENT);
+            Response<ShortenResponse> response = cliente.shorten()
+                    .setLongUrl(url.getAddress())
+                    .call();
 
-        validateShortenResponse(response);
+            validateShortenResponse(response);
 
-        url.setShortenedAddress(response.data.url);
+            url.setShortenedAddress(response.data.url);
+        } catch (Exception ex) {
+            System.out.println("Error: It was not possible to communicate with Bitly Client.");
+            throw ex;
+        }
     }
 
     public void validateShortenResponse(Response<ShortenResponse> response) {
         if (response.status_code != 200) {
-            throw new ValidacaoException("There is a problem in the proccess, please try again later.");
+            throw new CommunicationException("There is a communication problem, please try later.");
         }
     }
 
