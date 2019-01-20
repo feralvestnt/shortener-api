@@ -18,27 +18,43 @@ public class UrlService {
     @Autowired
     private UrlRepository urlRepository;
 
-    private static String ACCESS_TOKEN_BITLY_CLIENT = "79c3d14dadeeaa35656d13cae1e9f9191d1a5f6e";
+    private static String ACCESS_TOKEN_BITLY_CLIENT = "79c3d14dadeeaa35656d13cae1e9f9191d1a5f6ee";
 
     public String save(Url url) {
-        validateUrl(url);
+        try {
+            validateUrl(url);
 
-        shortenAddress(url);
-        urlRepository.save(url);
+            shortenAddress(url);
+            urlRepository.save(url);
+
+        } catch (ValidacaoException ex) {
+            throw ex;
+        } catch (Exception sql) {
+            System.out.println("Error saving url.");
+        }
         return url.getShortenedAddress();
     }
 
-    public void shortenAddress(Url url) {
-        BitlyClient cliente = new BitlyClient(ACCESS_TOKEN_BITLY_CLIENT);
-        Response<ShortenResponse> resp = cliente.shorten()
-                                .setLongUrl(url.getAddress())
-                                .call();
-        url.setShortenedAddress(resp.data.url);
+    public void validateUrl(Url url) {
+        if(url.getAddress() == null || url.getAddress().equals("")) {
+            throw new ValidacaoException("Address is mandatory.");
+        }
     }
 
-    public void validateUrl(Url url) {
-        if(url.getAddress() == null) {
-            throw new ValidacaoException("Address is mandatory.");
+    public void shortenAddress(Url url) throws ValidacaoException {
+        BitlyClient cliente = new BitlyClient(ACCESS_TOKEN_BITLY_CLIENT);
+        Response<ShortenResponse> response = cliente.shorten()
+                                .setLongUrl(url.getAddress())
+                                .call();
+
+        validateShortenResponse(response);
+
+        url.setShortenedAddress(response.data.url);
+    }
+
+    public void validateShortenResponse(Response<ShortenResponse> response) {
+        if (response.status_code != 200) {
+            throw new ValidacaoException("There is a problem in the proccess, please try again later.");
         }
     }
 
